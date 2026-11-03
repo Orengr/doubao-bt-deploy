@@ -54,3 +54,14 @@ echo "面板: https://127.0.0.1:$PORT  公网: $(grep -oE 'https://[a-z0-9-]+\.t
 echo "默认站点:  http://127.0.0.1:8088 公网: $(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/tunnel_web.log 2>/dev/null | head -1)"
 echo "导航页: 默认站点打开即是"
 echo "=========================================="
+echo ""
+echo "重新生成汇报单（账号密码没变，网址可能更新）..."
+bash "$WORK/scripts/summary.sh"
+cat <<'PLAIN'
+
+大白话说明：
+- 你之前建的网站和数据库都还在（数据在持久目录里），放心；
+- 控制台的网址可能变了（隧道地址是新的），看上面汇报单；
+- 账号密码和之前一样，没变；
+- 手机能打开：用汇报单里的"公网地址"。
+PLAIN
