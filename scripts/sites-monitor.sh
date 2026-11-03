@@ -28,35 +28,50 @@ get_panel_url(){
   fi
 }
 
-# ---------- 生成站点导航页（用户自助看站点地址的唯一入口） ----------
+# ---------- 生成站点导航页（动漫风格，用户自助看站点地址的唯一入口） ----------
 gen_nav(){
   local panel_url; panel_url=$(get_panel_url)
-  local list="" ptxt=""
+  local list="" ptxt="" ptags=""
   [ -f "$WORK/ports.txt" ] && ptxt=$(tr '\n' ' ' < "$WORK/ports.txt")
+  # 端口小标签（彩色圆角）
+  for p in $ptxt; do
+    ptags="$ptags<span style=\"display:inline-block;font-size:12px;color:#5b3a8e;background:linear-gradient(135deg,#ffe3f0,#e9ddff);border-radius:999px;padding:3px 10px;\">$p</span>"
+  done
   if [ -f "$SITES" ]; then
     while IFS= read -r line; do
       port=$(echo "$line" | grep -oE '端口[0-9]+' | grep -oE '[0-9]+')
       url=$(echo "$line" | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com')
-      [ -n "$url" ] && list="$list<div style=\"display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:12px 14px;margin-bottom:8px;flex-wrap:wrap;gap:6px;\"><span style=\"font-size:14px;font-weight:600;color:#1A1B1C;\">站点 $port</span><a href=\"$url\" style=\"font-size:13px;color:#1a73e8;text-decoration:none;word-break:break-all;\">$url</a></div>"
+      [ -n "$url" ] && list="$list<div style=\"display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:16px;padding:12px 14px;margin-bottom:10px;flex-wrap:wrap;gap:6px;box-shadow:0 4px 12px rgba(179,157,255,0.15);\"><span style=\"font-size:13px;font-weight:700;color:#5b3a8e;background:linear-gradient(135deg,#ffe3f0,#e9ddff);border-radius:999px;padding:4px 12px;\">站点 $port</span><a href=\"$url\" style=\"font-size:13px;color:#7a5cc0;text-decoration:none;word-break:break-all;font-weight:500;\">$url</a></div>"
     done < "$SITES"
   fi
   cat > $NAV <<EOF
 <html style="margin:0;padding:0;">
-<div style="box-sizing:border-box;max-width:520px;margin:0 auto;padding:16px;font-family:'Roboto','PingFang SC','Segoe UI',Arial,sans-serif;background:#F4F3EE;min-height:100vh;">
-  <div style="font-size:18px;font-weight:600;color:#1A1B1C;margin-bottom:4px;">我的服务器站点导航</div>
-  <div style="font-size:12px;color:#6B7280;margin-bottom:16px;">新建站点后约 30 秒刷新本页，即可看到新站链接</div>
-
-  <div style="font-size:13px;color:#1A1B1C;background:linear-gradient(135deg,rgba(139,200,234,0.2),rgba(139,200,234,0.34));border-radius:12px;padding:12px 14px;margin-bottom:16px;">
-    <b>宝塔面板：</b><a href="$panel_url" style="color:#1a73e8;word-break:break-all;">$panel_url</a>
+<div style="box-sizing:border-box;max-width:540px;margin:0 auto;padding:20px 16px 28px;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Segoe UI',Arial,sans-serif;background:linear-gradient(160deg,#ffe9f2 0%,#f3e9ff 45%,#e6f2ff 100%);min-height:100vh;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+    <svg width="30" height="30" viewBox="0 0 24 24" style="flex:none;"><path fill="#ff9ecb" d="M12 2l2.9 6.2 6.8.8-5.1 4.6 1.4 6.7L12 17l-6 3.3 1.4-6.7L2.3 9l6.8-.8z"/><path fill="#fff" d="M12 6.5l1.3 2.8 3.1.4-2.3 2.1.6 3L12 13.3l-2.7 1.5.6-3-2.3-2.1 3.1-.4z"/></svg>
+    <div>
+      <div style="font-size:20px;font-weight:700;color:#5b3a8e;">我的服务器站点导航</div>
+      <div style="font-size:12px;color:#9a7fc0;margin-top:2px;">新建站点后约 30 秒刷新本页，即可看到新站链接</div>
+    </div>
   </div>
 
-  <div style="font-size:14px;font-weight:600;color:#1A1B1C;margin-bottom:8px;">站点列表</div>
+  <div style="background:linear-gradient(135deg,#ff9ecb,#b39dff);border-radius:20px;padding:14px 16px;margin:14px 0 18px;box-shadow:0 6px 18px rgba(179,157,255,0.35);">
+    <div style="font-size:12px;color:rgba(255,255,255,0.92);margin-bottom:6px;display:flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" style="flex:none;"><path fill="#fff" d="M12 21s-7-4.6-9.5-9C.8 8.8 3 5.5 6.4 5.5c2 0 3.6 1 4.6 2.6 1-1.6 2.6-2.6 4.6-2.6 3.4 0 5.6 3.3 3.9 6.5C19 16.4 12 21 12 21z"/></svg>宝塔面板</div>
+    <a href="$panel_url" style="display:block;font-size:13px;color:#fff;font-weight:600;text-decoration:none;word-break:break-all;">$panel_url</a>
+  </div>
+
+  <div style="font-size:15px;font-weight:700;color:#5b3a8e;margin:0 0 10px 2px;">站点列表</div>
   $list
 
-  <div style="font-size:12px;color:#6B7280;margin-top:16px;line-height:1.6;">
-    建站方法：面板 → 添加站点 → 域名填 <b>名字.后缀:端口</b>（如 test.com:20001）→ 确定<br>
-    可用端口（30个，按顺序用）：$ptxt<br>
-    本页自动记录所有站点的公网访问地址，刷新即可查看。
+  <div style="background:#fff;border-radius:20px;padding:14px 16px;margin-top:16px;box-shadow:0 4px 14px rgba(179,157,255,0.18);">
+    <div style="font-size:12px;color:#8a6fb8;line-height:1.9;">
+      建站方法：面板 → 添加站点 → 域名填 <b style="color:#5b3a8e;">名字.后缀:端口</b>（如 test.com:20001）→ 确定<br>
+      <span style="color:#5b3a8e;font-weight:600;">可用端口（30个，按顺序用）：</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+      $ptags
+    </div>
+    <div style="font-size:12px;color:#8a6fb8;margin-top:10px;">本页自动记录所有站点的公网访问地址，刷新即可查看。</div>
   </div>
 </div>
 </html>
