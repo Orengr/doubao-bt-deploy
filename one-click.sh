@@ -10,6 +10,18 @@ exec > /tmp/bt_oneclick.log 2>&1
 set -e
 echo "=== $(date) 一键部署开始 ==="
 
+# ---------- 0. 免密 sudo 检查（容器 sudo 可能要密码，先探明再动手，避免中途卡死） ----------
+if ! sudo -n true 2>/dev/null; then
+    echo "!! 当前环境 sudo 需要密码，脚本无法自动执行系统级操作。"
+    echo "   请任选其一："
+    echo "   1) 以 root 身份运行： sudo -i 后  bash $0"
+    echo "   2) 配置免密 sudo（编辑 /etc/sudoers 加 NOPASSWD:ALL）"
+    echo "   若在豆包对话中被安全策略拦截，请按 docs/08-平台安全拦截与分步执行.md 分步手动执行"
+    exit 1
+fi
+
+
+
 # ---------- 0. 工作区自适应（不写死任何人的路径） ----------
 # 豆包工作区环境变量；兜底取当前目录
 WORK="${DOUBAO_WORKSPACE:-$(pwd)}"
