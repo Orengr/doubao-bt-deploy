@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的个人主页</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',Arial,sans-serif;
+    background:linear-gradient(160deg,#ffe9f2 0%,#f3e9ff 45%,#e6f2ff 100%);
+    min-height:100vh;
+    color:#3a2f5c;
+  }
+  .wrap { max-width:640px; margin:0 auto; padding:32px 20px 48px; }
+  .avatar {
+    width:96px; height:96px; border-radius:50%;
+    background:linear-gradient(135deg,#ff9ecb,#b39dff);
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto 16px;
+    font-size:40px; font-weight:800; color:#fff;
+    box-shadow:0 8px 20px rgba(179,157,255,0.4);
+  }
+  h1 { text-align:center; font-size:26px; font-weight:800; color:#5b3a8e; }
+  .slogan { text-align:center; color:#9a7fc0; font-size:14px; margin:6px 0 24px; }
+  .card {
+    background:#fff; border-radius:18px; padding:18px 20px; margin-bottom:16px;
+    box-shadow:0 4px 14px rgba(179,157,255,0.18);
+  }
+  .card h2 { font-size:16px; font-weight:800; color:#5b3a8e; margin-bottom:10px; }
+  .card p, .card li { font-size:14px; line-height:1.9; color:#5a4a6e; }
+  .card ul { padding-left:20px; }
+  .tags span {
+    display:inline-block; font-size:13px; color:#5b3a8e;
+    background:linear-gradient(135deg,#ffe3f0,#e9ddff);
+    border-radius:999px; padding:4px 12px; margin:0 6px 6px 0;
+  }
+  .contact a {
+    display:inline-block; font-size:14px; color:#7a5cc0;
+    background:linear-gradient(135deg,#ffe3f0,#e9ddff);
+    border-radius:999px; padding:6px 16px; margin:0 8px 8px 0;
+    text-decoration:none;
+  }
+  .foot { text-align:center; color:#9a7fc0; font-size:12px; margin-top:24px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="avatar">我</div>
+  <h1>你的名字</h1>
+  <div class="slogan">一句话介绍自己，比如：爱折腾的 95 后 / 程序员 / 学生</div>
+
+  <div class="card">
+    <h2>关于我</h2>
+    <p>这里写两三句话介绍自己：你是谁、做什么、有什么爱好。
+       比如：喜欢写代码，也喜欢拍照和旅行，欢迎来我的小站逛逛。</p>
+  </div>
+
+  <div class="card">
+    <h2>我会这些</h2>
+    <div class="tags">
+      <span>技能一</span><span>技能二</span><span>技能三</span>
+      <span>技能四</span><span>技能五</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>我的作品 / 项目</h2>
+    <ul>
+      <li>项目一：一句话说明它是什么</li>
+      <li>项目二：一句话说明它是什么</li>
+      <li>项目三：一句话说明它是什么</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>联系方式</h2>
+    <p class="contact">
+      <a href="#">微信/邮箱</a>
+      <a href="#">GitHub</a>
+      <a href="#">微博/小红书</a>
+    </p>
+    <p>提示：把上面占位内容改成你自己的，这个页面就是你的个人名片了。</p>
+  </div>
+
+  <div class="foot">用「宝塔一键部署」创建的我的个人主页</div>
+
+</div>
+</body>
+</html>
