@@ -27,7 +27,11 @@ URL="127.0.0.1:$PORT"
 
 # ---------- 1. 准备 cloudflared 二进制 ----------
 if ! command -v cloudflared >/dev/null 2>&1; then
-    [ -x "$CF" ] || curl -sL -o "$CF" https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 && chmod +x "$CF"
+    if [ ! -x "$CF" ]; then
+        bash "$(dirname "$0")/fetch.sh" \
+            "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64" \
+            "$CF" && chmod +x "$CF"
+    fi
 fi
 CMD=$(command -v cloudflared || echo "$CF")
 

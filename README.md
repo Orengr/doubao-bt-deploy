@@ -47,7 +47,9 @@ git clone <本仓库地址> && cd doubao-bt-deploy
 bash one-click.sh
 ```
 
-> **离线资源（可选加速，强烈建议）**：把 GitHub Release 里的 `mysql-8.0.40-linux-glibc2.17-x86_64.tar.xz`、`php81-prebuilt.tar.xz` 放进项目的 `bt_res/` 目录，部署时 **MySQL 和 PHP 都是秒装**（解压即用，不再下载/编译）。Release 地址见本仓库页面右侧 Releases。不放也行：MySQL 会自动在线下载（3–8 分钟），PHP 自动用包内源码编译（20–40 分钟）。
+> **离线资源（可选加速，强烈建议）**：把 GitHub Release 里的 `mysql-8.0.40-linux-glibc2.17-x86_64.tar.xz`、`php81-prebuilt.tar.xz` 放进项目的 `bt_res/` 目录，部署时 **MySQL 和 PHP 都是秒装**（解压即用，不再下载/编译）。Release 地址见本仓库页面右侧 Releases。不放也行：MySQL 会自动在线下载（3–8 分钟），PHP 自动用包内源码编译（20–40 分钟）。**不放也不用手动管**——`one-click.sh` 会全自动下载离线资源。
+>
+> **下载 GitHub 慢怎么办？** 让豆包/你自己开代理即可，脚本里的下载器会自动识别 `http_proxy`/`https_proxy` 环境变量走代理；没开代理时还会自动尝试国内 GitHub 加速镜像（ghfast.top / gh-proxy.com，支持断点续传）。不需要手动配置任何代理地址。
 
 完成后查看 `/tmp/bt_oneclick.log` 末尾的汇总：
 
