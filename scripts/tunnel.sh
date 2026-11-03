@@ -36,9 +36,9 @@ fi
 CMD=$(command -v cloudflared || echo "$CF")
 
 # ---------- 2. 启动隧道 ----------
-# 杀旧隧道：必须按 PID 全量杀（pkill -f 会匹配到 pkill 自身把自己杀掉）
-for _p in $(pgrep -f "cloudflared" 2>/dev/null); do
-  [ "$_p" != "$$" ] && kill "$_p" 2>/dev/null
+# 杀同端口的旧隧道（只杀指向本端口的，不碰其他端口隧道，否则多条隧道互相杀）
+for _p in $(pgrep -x cloudflared 2>/dev/null); do
+  ps -p "$_p" -o args= 2>/dev/null | grep -q "127.0.0.1:$PORT" && kill "$_p" 2>/dev/null
 done
 nohup "$CMD" tunnel --url "$SCHEME://$URL" --no-autoupdate > "$LOG" 2>&1 &
 echo "隧道启动(pid $!) -> $SCHEME://$URL"

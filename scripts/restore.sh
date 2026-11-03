@@ -22,6 +22,13 @@ ENV="$WORK/bt_env"
 
 [ -d "$DATA/server/panel" ] || { echo "错误: 持久数据不存在 $DATA（先跑 one-click.sh）"; exit 1; }
 
+# ---------- 0.5 scripts 自检（恢复依赖的脚本必须和持久数据在同一盘） ----------
+if [ ! -f "$WORK/scripts/restore.sh" ] || [ ! -f "$WORK/scripts/fetch.sh" ]; then
+    for cand in "$(pwd)/deliver/doubao-bt-deploy/scripts" "/home/user/Doubao/chats"/*/deliver/doubao-bt-deploy/scripts; do
+        [ -f "$cand/fetch.sh" ] && { mkdir -p "$WORK/scripts"; cp "$cand"/*.sh "$WORK/scripts/" 2>/dev/null; echo "已从项目目录补齐 scripts 到 $WORK/scripts"; break; }
+    done
+fi
+
 # ---------- 1. 重建 /www 软链接 ----------
 if [ ! -L /www ]; then
     sudo ln -s "$DATA" /www && echo "已重建 /www -> $DATA"
@@ -149,8 +156,8 @@ if [ ! -x "$CF" ] && ! command -v cloudflared >/dev/null 2>&1; then
         "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64" \
         "$CF" && chmod +x "$CF"
 fi
-for _p in $(pgrep -f cloudflared 2>/dev/null); do
-  [ "$_p" != "$$" ] && kill "$_p" 2>/dev/null
+for _p in $(pgrep -x cloudflared 2>/dev/null); do
+  kill "$_p" 2>/dev/null
 done
 PORT=$PORT bash "$WORK/scripts/tunnel.sh" panel https 2>/dev/null || true
 sleep 6
@@ -158,6 +165,16 @@ PORT=8088  bash "$WORK/scripts/tunnel.sh" web http  2>/dev/null || true
 
 # ---------- 8. 恢复站点监控与导航页 ----------
 sudo nohup bash "$WORK/scripts/sites-monitor.sh" > /tmp/sites_monitor.log 2>&1 &
+
+# ---------- 8.5 拉起自动巡检守护（容器再被重置也能自愈，不用人盯） ----------
+if ! pgrep -f "autorecover.sh daemon" >/dev/null 2>&1; then
+    sudo nohup bash "$WORK/scripts/autorecover.sh" daemon >> /tmp/autorecover.log 2>&1 &
+    echo "自动巡检守护已启动（每 5 分钟自检，异常自动全套恢复）"
+fi
+# cron 兜底：常驻进程也可能随容器死掉，cron 活着就能继续巡检
+sudo service cron start >/dev/null 2>&1 || true
+( sudo crontab -l 2>/dev/null | grep -v autorecover.sh; echo "*/5 * * * * /bin/bash $WORK/scripts/autorecover.sh once >> /tmp/autorecover.log 2>&1" ) | sudo crontab -
+echo "cron 自愈任务已注册（每 5 分钟兜底检查）"
 
 echo ""
 echo "================ 恢复完成 ================"
@@ -168,6 +185,20 @@ echo "=========================================="
 echo ""
 echo "重新生成汇报单（账号密码没变，网址可能更新）..."
 bash "$WORK/scripts/summary.sh"
+
+# ---------- 9. 把最新网址写入持久盘状态文件（下次对话自动汇报给用户） ----------
+# 隧道地址每次恢复都变，必须让用户拿到新地址；/tmp 会随容器重置丢，所以写持久盘
+sleep 40   # 等 sites-monitor 把小站隧道拉起来
+PANEL_U=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/tunnel_panel.log 2>/dev/null | head -1)
+WEB_U=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/tunnel_web.log 2>/dev/null | head -1)
+SITE_U=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$WORK/sites.txt" 2>/dev/null | head -1)
+sudo tee "$WORK/last_urls.txt" >/dev/null <<URLS
+更新时间: $(date '+%F %T')
+宝塔面板: ${PANEL_U:-（面板隧道未起，可重跑 tunnel.sh panel https）}
+小站(20001): ${SITE_U:-（小站隧道未起，等 sites-monitor 30 秒后查看）}
+导航页(8088): ${WEB_U:-（导航隧道未起，可重跑 tunnel.sh web http）}
+URLS
+echo "最新网址已写入 $WORK/last_urls.txt（下次对话我会读出来发给你）"
 cat <<'PLAIN'
 
 大白话说明：
