@@ -25,11 +25,18 @@ bash "$WORK/scripts/persist-www.sh"
 # ---------- 2. 安装宝塔面板（含容器补丁） ----------
 bash "$WORK/scripts/install-bt.sh"
 
-# ---------- 3. 快速安装 MySQL（官方预编译二进制，几分钟） ----------
+# ---------- 3. 快速安装 MySQL（官方预编译二进制，离线包优先） ----------
 if [ -x /www/server/mysql/bin/mysqld ]; then
     echo "MySQL 已存在，跳过安装"
 else
     bash "$WORK/scripts/mysql-quick.sh" || echo "MySQL 安装失败（不影响面板，可稍后重跑 mysql-quick.sh）"
+fi
+
+# ---------- 3.5. 安装 PHP 8.1（离线源码包优先，自动编译，面板直接识别） ----------
+if [ -x /www/server/php/81/sbin/php-fpm ]; then
+    echo "PHP 8.1 已存在，跳过"
+else
+    bash "$WORK/scripts/php-offline.sh" || echo "PHP 安装未完成（可稍后重跑 php-offline.sh，编译日志 /tmp/php_install.log）"
 fi
 
 # ---------- 4. 公网隧道：面板（https 包装） ----------

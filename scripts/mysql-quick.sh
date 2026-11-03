@@ -30,12 +30,23 @@ fi
 # ---------- 1. 系统依赖（容器常见缺 libaio / libncurses） ----------
 sudo apt-get install -y libaio1 libncurses5 libncursesw5 libnuma1 2>/dev/null || true
 
-# ---------- 2. 下载预编译包（CDN 失败可换清华/阿里镜像） ----------
+# ---------- 2. 取预编译包：离线包优先，没有才在线下载 ----------
 cd /tmp
-[ -f "$PKG" ] || curl -fSL -o "$PKG" "$URL" || {
-    echo "官方 CDN 下载失败，尝试清华镜像..."
-    curl -fSL -o "$PKG" "https://mirrors.tuna.tsinghua.edu.cn/mysql/downloads/MySQL-8.0/${PKG}"
-}
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOCAL_PKG=""
+for cand in "$SCRIPT_DIR/bt_res/$PKG" "$SCRIPT_DIR/../bt_res/$PKG" "$WORK/bt_res/$PKG" "/tmp/$PKG"; do
+  [ -f "$cand" ] && LOCAL_PKG="$cand" && break
+done
+if [ -n "$LOCAL_PKG" ]; then
+  echo "找到离线包: $LOCAL_PKG（跳过下载，秒级解压）"
+  cp -f "$LOCAL_PKG" /tmp/
+else
+  echo "无离线包，在线下载（约 800MB，3-10 分钟；下载后也可放回 bt_res/ 下次免下载）"
+  [ -f "$PKG" ] || curl -fSL -o "$PKG" "$URL" || {
+      echo "官方 CDN 下载失败，尝试清华镜像..."
+      curl -fSL -o "$PKG" "https://mirrors.tuna.tsinghua.edu.cn/mysql/downloads/MySQL-8.0/${PKG}"
+  }
+fi
 
 # ---------- 3. 解压到 /www/server/mysql ----------
 sudo mkdir -p "$BASE"
