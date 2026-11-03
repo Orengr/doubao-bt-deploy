@@ -1,0 +1,6 @@
+*.log
+*.zip
+sites.txt
+sites_tunnels/
+cloudflared
+bt_data/
