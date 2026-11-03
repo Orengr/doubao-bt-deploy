@@ -43,12 +43,10 @@ echo "站点监控已启动（新站点约 30 秒自动出公网地址）"
 
 # ---------- 6. 汇总输出 ----------
 sleep 5
-PORT=$(cat /tmp/bt_panel_port 2>/dev/null || echo 8888)
 echo ""
-echo "================ 部署完成 ================"
-echo "宝塔面板本地地址: https://127.0.0.1:$PORT"
-echo "面板登录信息: 见 /www/server/panel/default.pl 或面板首页"
-echo "站点导航页: 本机默认站点 8088/80 端口（导航页自动生成）"
-echo "公网隧道地址: grep -E 'trycloudflare|serveo' /tmp/tunnel_panel.log"
-echo "=========================================="
+echo "================ 部署完成，生成汇报单 ================"
+# 汇总脚本把账号/密码/地址集中打印并保存到 /tmp/bt_summary.txt
+bash "$WORK/scripts/summary.sh"
+echo "======================================================="
+echo "完整日志: /tmp/bt_oneclick.log（含上方汇报单）"
 echo "=== $(date) 完成 ==="

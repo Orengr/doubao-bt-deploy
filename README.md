@@ -42,7 +42,26 @@ bash scripts/mysql-quick.sh      # 3. MySQL 8 快装（几分钟）
 PORT=8888  bash scripts/tunnel.sh panel https   # 4a. 面板公网隧道
 PORT=8088  bash scripts/tunnel.sh web http     # 4b. 默认站点公网隧道
 sudo nohup bash scripts/sites-monitor.sh &     # 5. 多端口建站监控 + 导航页
+bash scripts/summary.sh          # 6. 汇总汇报单（账号/密码/地址）
 ```
+
+### 发给豆包/助手执行：完成后必须汇报
+
+部署完成后，**豆包/助手应把汇报单 `/tmp/bt_summary.txt` 完整读给用户**（one-click.sh 已自动生成并打印），汇报单包含：
+
+| 汇报项 | 内容 |
+| --- | --- |
+| 宝塔面板 | 本地地址 + 公网地址 + **登录账号/密码**（登录后立即改密） |
+| MySQL 8 | root **密码**（请用户抄录，勿外传） |
+| 站点导航页 | 本地地址 + 公网地址 |
+| 使用方法 | 建站步骤、重置恢复命令 |
+| 安全提醒 | 临时密码/隧道地址变动提示 |
+
+可直接复制给豆包/助手执行的提示词：
+
+> 请运行 `bash one-click.sh` 完成一键部署。部署完成后，读取
+> `/tmp/bt_summary.txt`，把面板登录账号密码、MySQL root 密码、
+> 面板公网地址、站点导航页地址逐项汇报给我，并提醒我立即修改默认密码。
 
 ---
 
@@ -71,6 +90,7 @@ doubao-bt-deploy/
 │   ├── mysql-quick.sh        # MySQL 8 预编译二进制快装
 │   ├── tunnel.sh             # cloudflared/serveo 内网穿透
 │   ├── sites-monitor.sh      # 多端口自动隧道 + 站点导航页生成
+│   ├── summary.sh            # 部署完成汇报单（账号/密码/地址汇总）
 │   └── restore.sh            # 沙箱重置一键恢复
 └── docs/
     ├── 01-部署手册.md          # 从零开始的完整图文步骤
