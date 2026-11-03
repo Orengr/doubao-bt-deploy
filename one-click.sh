@@ -13,6 +13,8 @@ echo "=== $(date) 一键部署开始 ==="
 # ---------- 0. 工作区自适应（不写死任何人的路径） ----------
 # 豆包工作区环境变量；兜底取当前目录
 WORK="${DOUBAO_WORKSPACE:-$(pwd)}"
+# 必须 export：子脚本（mysql-quick.sh / php-offline.sh）要靠它找 bt_res 离线包
+export WORK DOUBAO_WORKSPACE
 DATA="$WORK/bt_data/www"
 CF="$WORK/cloudflared"
 mkdir -p "$WORK"

@@ -19,7 +19,12 @@ ARCH="x86_64"
 BASE="/www/server/mysql"
 DATA="$BASE/data"
 PKG="mysql-${VER}-linux-glibc2.17-${ARCH}.tar.xz"
+# 下载顺序：GitHub Release（本项目预编译资产，走 fetch.sh 多通道加速，实测最快）
+#          → 清华镜像 → MySQL 官方 CDN（国外源最慢，仅兜底）
+WORK="${DOUBAO_WORKSPACE:-$(pwd)}"
+ASSET_BASE="${ASSET_BASE:-https://github.com/Orengr/doubao-bt-deploy/releases/latest/download}"
 URL="https://cdn.mysql.com/Downloads/MySQL-8.0/${PKG}"
+TSINGHUA="https://mirrors.tuna.tsinghua.edu.cn/mysql/downloads/MySQL-8.0/${PKG}"
 
 # ---------- 0. 已有则跳过 ----------
 if [ -x "$BASE/bin/mysqld" ]; then
@@ -28,7 +33,21 @@ if [ -x "$BASE/bin/mysqld" ]; then
 fi
 
 # ---------- 1. 系统依赖（容器常见缺 libaio / libncurses） ----------
-sudo apt-get install -y libaio1 libncurses5 libncursesw5 libnuma1 2>/dev/null || true
+# 必须装 libaio1：缺了 mysqld --initialize 会直接失败（错误还被吞，排查半天）
+sudo apt-get install -y libaio1 libaio-dev libnuma1 2>/dev/null || true
+# libncurses5 在较新 Ubuntu（22.04+）没有包，用 libncurses6 替代
+sudo apt-get install -y libncurses6 2>/dev/null || sudo apt-get install -y libncurses5 2>/dev/null || true
+if ! ldconfig -p 2>/dev/null | grep -q 'libaio.so.1'; then
+    echo "!! 缺少 libaio.so.1，尝试 apt-get update 后重装..."
+    sudo apt-get update 2>/dev/null || true
+    sudo apt-get install -y libaio1 libaio-dev || true
+    if ! ldconfig -p 2>/dev/null | grep -q 'libaio.so.1'; then
+        echo "!! libaio.so.1 仍缺失。MySQL 初始化必然失败。"
+        echo "修复: sudo apt-get install -y libaio1  后重跑 bash mysql-quick.sh"
+        exit 1
+    fi
+fi
+echo "依赖检查通过（libaio.so.1 就绪）"
 
 # ---------- 2. 取预编译包：离线包优先，没有才在线下载 ----------
 cd /tmp
@@ -41,11 +60,18 @@ if [ -n "$LOCAL_PKG" ]; then
   echo "找到离线包: $LOCAL_PKG（跳过下载，秒级解压）"
   cp -f "$LOCAL_PKG" /tmp/
 else
-  echo "无离线包，在线下载（约 800MB，3-10 分钟；下载后也可放回 bt_res/ 下次免下载）"
-  [ -f "$PKG" ] || curl -fSL -o "$PKG" "$URL" || {
-      echo "官方 CDN 下载失败，尝试清华镜像..."
-      curl -fSL -o "$PKG" "https://mirrors.tuna.tsinghua.edu.cn/mysql/downloads/MySQL-8.0/${PKG}"
-  }
+  echo "无离线包，在线下载（约 800MB；优先 GitHub Release 多通道加速，实测最快）"
+  if [ ! -f "$PKG" ]; then
+      if bash "$SCRIPT_DIR/fetch.sh" "$ASSET_BASE/$PKG" "/tmp/$PKG"; then
+          echo "GitHub Release 下载完成"
+      else
+          echo "GitHub Release 失败，尝试清华镜像..."
+          curl -fSL -o "$PKG" "$TSINGHUA" || {
+              echo "清华镜像失败，最后尝试官方 CDN（可能很慢）..."
+              curl -fSL -o "$PKG" "$URL" || { echo "所有下载通道失败，请检查网络后重跑"; exit 1; }
+          }
+      fi
+  fi
 fi
 
 # ---------- 3. 解压到 /www/server/mysql ----------
@@ -58,11 +84,13 @@ sudo chown -R mysql:mysql "$BASE" 2>/dev/null || {
 }
 
 # ---------- 4. 初始化数据目录（免密初始化，随后改密） ----------
+# 错误不吞：初始化失败会打印详细原因到本日志 /tmp/mysql_quick.log
 sudo mkdir -p "$DATA"
-sudo "$BASE/bin/mysqld" --initialize-insecure --basedir="$BASE" --datadir="$DATA" --user=mysql 2>/dev/null || \
-sudo "$BASE/bin/mysqld" --initialize-insecure --basedir="$BASE" --datadir="$DATA" 2>/dev/null || {
-    echo "初始化失败，检查依赖: sudo apt-get install -y libaio1"; exit 1;
-}
+if ! sudo "$BASE/bin/mysqld" --initialize-insecure --basedir="$BASE" --datadir="$DATA" --user=mysql; then
+    echo "!! MySQL 初始化失败（上面是详细错误，常见原因: 缺 libaio.so.1）"
+    echo "修复: sudo apt-get install -y libaio1 后重跑 bash mysql-quick.sh"
+    exit 1
+fi
 
 # ---------- 5. 开机自启脚本 ----------
 sudo cp "$BASE/support-files/mysql.server" /etc/init.d/mysqld

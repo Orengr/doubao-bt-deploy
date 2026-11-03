@@ -3,7 +3,7 @@
 在 **豆包工作区**（以及任何 rootfs 易重置、无 systemd、无公网 IP 的容器）里，一条命令部署出：
 
 - ✅ **宝塔面板**（含容器兼容补丁，安装不再卡死）
-- ✅ **MySQL 8 快速安装**（离线预编译包**秒装**；无离线包时自动在线下载官方预编译二进制，3–8 分钟，替代 1–2 小时的源码编译）
+- ✅ **MySQL 8 快速安装**（离线预编译包**秒装**；无离线包时**默认从 GitHub Release 下载**（多通道加速，实测最快），失败才降级清华镜像/官方 CDN，3–8 分钟装好，替代 1–2 小时的源码编译）
 - ✅ **PHP 8.1 一键安装**（`bt_res/` 离线预编译包**秒装**；无预编译包时自动用包内官方源码并行编译，20–40 分钟；装好即被面板识别）
 - ✅ **公网访问**（cloudflared / serveo 内网穿透，零配置、免备案、免公网 IP）
 - ✅ **多端口自助建站**（20001–20050 共 50 个端口，面板里添加站点即自动暴露公网地址）
@@ -48,7 +48,7 @@ git clone <本仓库地址> && cd doubao-bt-deploy
 bash one-click.sh
 ```
 
-> **离线资源（可选加速，强烈建议）**：把 GitHub Release 里的 `mysql-8.0.40-linux-glibc2.17-x86_64.tar.xz`、`php81-prebuilt.tar.xz` 放进项目的 `bt_res/` 目录，部署时 **MySQL 和 PHP 都是秒装**（解压即用，不再下载/编译）。Release 地址见本仓库页面右侧 Releases。不放也行：MySQL 会自动在线下载（3–8 分钟），PHP 自动用包内源码编译（20–40 分钟）。**不放也不用手动管**——`one-click.sh` 会全自动下载离线资源。
+> **离线资源（可选加速，强烈建议）**：把 GitHub Release 里的 `mysql-8.0.40-linux-glibc2.17-x86_64.tar.xz`、`php81-prebuilt.tar.xz` 放进项目的 `bt_res/` 目录，部署时 **MySQL 和 PHP 都是秒装**（解压即用，不再下载/编译）。Release 地址见本仓库页面右侧 Releases。不放也行：`one-click.sh` 会**全自动从 GitHub Release 下载**两个包到 `bt_res/`（多通道加速，实测比官方 CDN 快），MySQL 3–8 分钟、PHP 秒装；只有 GitHub 全通道失败才降级在线安装/源码编译。**全程零手动操作**。
 >
 > **下载 GitHub 慢怎么办？** 让豆包/你自己开代理即可，脚本里的下载器会自动识别 `http_proxy`/`https_proxy` 环境变量走代理；没开代理时还会自动尝试国内 GitHub 加速镜像（ghfast.top / gh-proxy.com，支持断点续传）。不需要手动配置任何代理地址。
 

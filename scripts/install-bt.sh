@@ -25,9 +25,20 @@ fi
 
 # ---------- 2. Patch 容器不兼容点 ----------
 # 2a. Fix_Apt_Lock: 容器内 /proc 全扫描死循环 -> 直接跳过
-sed -i 's#\[ ! -f "/usr/bin/apt-get" \] && return 0#return 0  # container patch#' install_panel.sh
+# 注意：sed 分隔符用 |（不能用 #，替换文本里含 # 会冲突报错）
+if grep -q '\[ ! -f "/usr/bin/apt-get" \] && return 0' install_panel.sh; then
+    sed -i 's|\[ ! -f "/usr/bin/apt-get" \] && return 0|return 0  # container patch|' install_panel.sh
+    echo "补丁 2a 已应用"
+else
+    echo "补丁 2a 未命中（官方脚本可能已更新，跳过不影响安装）"
+fi
 # 2b. Apt_Ready: 容器内 apt-get update 无意义 -> 直接跳过
-sed -i '/^Apt_Ready(){$/{n;s/.*/    return 0  # container patch/;}' install_panel.sh
+if grep -q '^Apt_Ready(){$' install_panel.sh; then
+    sed -i '/^Apt_Ready(){$/{n;s|.*|    return 0  # container patch|;}' install_panel.sh
+    echo "补丁 2b 已应用"
+else
+    echo "补丁 2b 未命中（官方脚本可能已更新，跳过不影响安装）"
+fi
 
 # ---------- 3. 安装（跳过交互确认 + 强制安装） ----------
 # 注意：sudo 默认 env_reset 会丢弃环境变量，INSTALL_FORCE 必须在 sudo 内部 export
@@ -38,8 +49,10 @@ echo "=== 面板安装退出码: $? ==="
 PORT=$(grep -oE 'SERVER_IP:[0-9]+' /tmp/bt_install.log 2>/dev/null | tail -1 | cut -d: -f2)
 [ -z "$PORT" ] && PORT=8888
 echo "=== 面板端口: $PORT ==="
+# ss 缺失时用 netstat 兜底（部分精简容器没装 iproute2）
+if command -v ss >/dev/null 2>&1; then CHK="ss -tln"; else CHK="netstat -tln"; fi
 for i in $(seq 1 30); do
-    if ss -tln 2>/dev/null | grep -q ":$PORT "; then
+    if $CHK 2>/dev/null | grep -q ":$PORT "; then
         echo "面板端口 $PORT 已就绪"
         break
     fi

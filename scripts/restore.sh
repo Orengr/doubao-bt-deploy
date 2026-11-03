@@ -27,8 +27,9 @@ PORT=$(sudo cat "$DATA/server/panel/data/port.pl" 2>/dev/null | tr -d '\n')
 [ -z "$PORT" ] && PORT=8888
 echo "面板端口: $PORT"
 sudo /etc/init.d/bt start 2>&1 | tail -3
+if command -v ss >/dev/null 2>&1; then CHK="ss -tln"; else CHK="netstat -tln"; fi
 for i in $(seq 1 30); do
-    ss -tln 2>/dev/null | grep -q ":$PORT " && { echo "面板端口 $PORT 已就绪"; break; }
+    $CHK 2>/dev/null | grep -q ":$PORT " && { echo "面板端口 $PORT 已就绪"; break; }
     sleep 2
 done
 
@@ -38,8 +39,12 @@ sudo /etc/init.d/nginx start >/dev/null 2>&1 || true
 [ -x "$DATA/server/mysql/bin/mysqld" ] && sudo /etc/init.d/mysqld start >/dev/null 2>&1 || true
 sleep 3
 
-# ---------- 4. 公网隧道（cloudflared） ----------
-[ -x "$CF" ] || curl -sL -o "$CF" https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 && chmod +x "$CF"
+# ---------- 4. 公网隧道（cloudflared，走 fetch.sh 多通道加速，避免直连 GitHub 卡死） ----------
+if [ ! -x "$CF" ] && ! command -v cloudflared >/dev/null 2>&1; then
+    bash "$WORK/scripts/fetch.sh" \
+        "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64" \
+        "$CF" && chmod +x "$CF"
+fi
 pkill -f cloudflared 2>/dev/null || true
 PORT=$PORT bash "$WORK/scripts/tunnel.sh" panel https 2>/dev/null || true
 sleep 6

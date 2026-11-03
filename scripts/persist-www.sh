@@ -11,9 +11,14 @@ WORK="${DOUBAO_WORKSPACE:-$(pwd)}"
 DATA="$WORK/bt_data/www"
 sudo mkdir -p "$DATA"
 
-if [ ! -L /www ] && [ -d /www ] && [ -n "$(sudo ls -A /www 2>/dev/null | head -1)" ]; then
-    echo "检测到旧 /www 有数据，自动迁移到持久目录..."
-    sudo cp -a /www/. "$DATA"/ && sudo rm -rf /www
+if [ ! -L /www ] && [ -d /www ]; then
+    if [ -n "$(sudo ls -A /www 2>/dev/null | head -1)" ]; then
+        echo "检测到旧 /www 有数据，自动迁移到持久目录..."
+        sudo cp -a /www/. "$DATA"/ && sudo rm -rf /www
+    else
+        # 空目录时 ln -s 会报 "File exists"，先移除空目录再建软链
+        sudo rmdir /www 2>/dev/null || true
+    fi
 fi
 [ -L /www ] || sudo ln -s "$DATA" /www
 echo "=== /www -> $(readlink /www) ==="

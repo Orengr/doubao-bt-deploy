@@ -17,6 +17,7 @@ echo "=== $(date) PHP 8.1 安装开始 ==="
 VER="8.1.31"
 PREFIX="/www/server/php/81"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+WORK="${DOUBAO_WORKSPACE:-$(pwd)}"
 
 # ---------- 0. 已有则跳过 ----------
 if [ -x "$PREFIX/sbin/php-fpm" ]; then
@@ -31,11 +32,21 @@ for cand in "$SCRIPT_DIR/bt_res/php81-prebuilt.tar.xz" "$SCRIPT_DIR/../bt_res/ph
 done
 if [ -n "$PREBUILT" ]; then
     echo "找到预编译包: $PREBUILT（官方源码编译的标准产物，解压即用）"
-    cd /
-    sudo tar -xf "$PREBUILT"
-    if [ -d /www/server/php/81pkg ] && [ ! -d "$PREFIX" ]; then
-        sudo mv /www/server/php/81pkg "$PREFIX"
-    fi
+    # 运行依赖（php-fpm 需要这些共享库；少了会启动失败）
+    sudo apt-get install -y libxml2 libcurl4 libonig5 libzip4 libpng16-16 libssl3 libbz2-1.0 libreadline8 2>/dev/null || \
+    sudo apt-get install -y libxml2 libcurl4 libonig5 libzip4 libpng16-16 libssl1.1 libbz2-1.0 libreadline8 2>/dev/null || true
+    # 关键：不要在 / 下直接 tar -xf！/www 是软链到持久目录，跨设备解压含硬链接的包会报
+    # "Cannot hardlink ... cross-device link" (EXDEV)。先解到 /tmp 同区，再 cp -a 过去
+    # （cp -a 跨设备自动把硬链接降级为普通文件复制，不报错）
+    sudo rm -rf /tmp/php81_x
+    sudo mkdir -p /tmp/php81_x
+    sudo tar -xf "$PREBUILT" -C /tmp/php81_x || { echo "!! 预编译包解压失败"; exit 1; }
+    SRC_DIR=$(sudo find /tmp/php81_x -maxdepth 6 -type d -name 81pkg 2>/dev/null | head -1)
+    [ -z "$SRC_DIR" ] && SRC_DIR=$(sudo find /tmp/php81_x -maxdepth 6 -type d -name '81' 2>/dev/null | head -1)
+    [ -z "$SRC_DIR" ] && { echo "!! 预编译包内未找到 PHP 目录（81pkg），请检查包"; exit 1; }
+    sudo mkdir -p "$PREFIX"
+    sudo cp -a "$SRC_DIR/." "$PREFIX/"
+    sudo rm -rf /tmp/php81_x
     sudo mkdir -p "$PREFIX/var/run"
     sudo chown -R www:www "$PREFIX/var" 2>/dev/null || sudo useradd -s /sbin/nologin www 2>/dev/null || true
     # init 脚本 + 启动
