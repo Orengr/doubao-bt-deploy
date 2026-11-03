@@ -61,8 +61,8 @@ fi
 bash "$WORK/scripts/tunnel.sh" panel https 2>/dev/null || true
 
 # ---------- 5. 常驻监控：多端口自助建站 + 站点导航页 ----------
-# 预生成可用端口表（20001-20030，按顺序用）
-seq 20001 20030 | sudo tee "$WORK/ports.txt" >/dev/null
+# 预生成可用端口表（20001-20050，按顺序用）
+seq 20001 20050 | sudo tee "$WORK/ports.txt" >/dev/null
 sudo nohup bash "$WORK/scripts/sites-monitor.sh" > /tmp/sites_monitor.log 2>&1 &
 echo "站点监控已启动（新站点约 30 秒自动出公网地址）"
 

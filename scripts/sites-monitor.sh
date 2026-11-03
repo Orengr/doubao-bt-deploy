@@ -46,40 +46,52 @@ gen_nav(){
   fi
   cat > $NAV <<EOF
 <html style="margin:0;padding:0;">
-<div style="box-sizing:border-box;width:100%;max-width:560px;margin:0 auto;padding:24px 20px 48px;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Segoe UI',Arial,sans-serif;background:linear-gradient(160deg,#ffe9f2 0%,#f3e9ff 45%,#e6f2ff 100%);min-height:100vh;">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<style>
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+  body{margin:0;padding:0;}
+</style>
+</head>
+<body style="margin:0;padding:0;">
+<div style="box-sizing:border-box;width:100%;max-width:560px;margin:0 auto;padding:20px 16px 36px;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Segoe UI',Arial,sans-serif;background:linear-gradient(160deg,#ffe9f2 0%,#f3e9ff 45%,#e6f2ff 100%);min-height:100vh;">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:2px;">
     <svg width="34" height="34" viewBox="0 0 24 24" style="flex:none;"><path fill="#ff9ecb" d="M12 2l2.9 6.2 6.8.8-5.1 4.6 1.4 6.7L12 17l-6 3.3 1.4-6.7L2.3 9l6.8-.8z"/><path fill="#fff" d="M12 6.5l1.3 2.8 3.1.4-2.3 2.1.6 3L12 13.3l-2.7 1.5.6-3-2.3-2.1 3.1-.4z"/></svg>
     <div>
-      <div style="font-size:22px;font-weight:800;color:#5b3a8e;line-height:1.3;">我的服务器站点导航</div>
+      <div style="font-size:21px;font-weight:800;color:#5b3a8e;line-height:1.3;">我的服务器站点导航</div>
       <div style="font-size:13px;color:#9a7fc0;margin-top:3px;">新建站点后约 30 秒刷新本页，即可看到新站链接</div>
     </div>
   </div>
 
-  <div style="background:linear-gradient(135deg,#ff9ecb,#b39dff);border-radius:22px;padding:16px 18px;margin:18px 0 20px;box-shadow:0 6px 18px rgba(179,157,255,0.35);">
-    <div style="font-size:13px;color:rgba(255,255,255,0.92);margin-bottom:6px;display:flex;align-items:center;gap:6px;"><svg width="16" height="16" viewBox="0 0 24 24" style="flex:none;"><path fill="#fff" d="M12 21s-7-4.6-9.5-9C.8 8.8 3 5.5 6.4 5.5c2 0 3.6 1 4.6 2.6 1-1.6 2.6-2.6 4.6-2.6 3.4 0 5.6 3.3 3.9 6.5C19 16.4 12 21 12 21z"/></svg>宝塔面板（控制台）</div>
+  <div style="background:linear-gradient(135deg,#ff9ecb,#b39dff);border-radius:20px;padding:14px 16px;margin:14px 0 16px;box-shadow:0 6px 18px rgba(179,157,255,0.35);">
+    <div style="font-size:13px;color:rgba(255,255,255,0.92);margin-bottom:5px;display:flex;align-items:center;gap:6px;"><svg width="16" height="16" viewBox="0 0 24 24" style="flex:none;"><path fill="#fff" d="M12 21s-7-4.6-9.5-9C.8 8.8 3 5.5 6.4 5.5c2 0 3.6 1 4.6 2.6 1-1.6 2.6-2.6 4.6-2.6 3.4 0 5.6 3.3 3.9 6.5C19 16.4 12 21 12 21z"/></svg>宝塔面板（控制台）</div>
     <a href="$panel_url" style="display:block;font-size:14px;color:#fff;font-weight:600;text-decoration:none;word-break:break-all;line-height:1.6;">$panel_url</a>
   </div>
 
-  <div style="font-size:17px;font-weight:800;color:#5b3a8e;margin:0 0 12px;">站点列表</div>
+  <div style="font-size:16px;font-weight:800;color:#5b3a8e;margin:0 0 10px;">站点列表</div>
   $list
 
-  <div style="background:#fff;border-radius:22px;padding:16px 18px;margin-bottom:16px;box-shadow:0 4px 14px rgba(179,157,255,0.18);">
-    <div style="font-size:17px;font-weight:800;color:#5b3a8e;margin-bottom:12px;">怎么建新网站（3 步）</div>
-    <div style="font-size:14px;color:#5a4a6e;line-height:2;">
+  <div style="background:#fff;border-radius:20px;padding:14px 16px;margin-bottom:14px;box-shadow:0 4px 14px rgba(179,157,255,0.18);">
+    <div style="font-size:16px;font-weight:800;color:#5b3a8e;margin-bottom:10px;">怎么建新网站（3 步）</div>
+    <div style="font-size:13.5px;color:#5a4a6e;line-height:2;">
       <div><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:999px;background:linear-gradient(135deg,#ff9ecb,#b39dff);color:#fff;font-weight:700;font-size:13px;margin-right:8px;">1</span>打开上面的控制台，左侧点「网站」，再点「添加站点」</div>
       <div><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:999px;background:linear-gradient(135deg,#ff9ecb,#b39dff);color:#fff;font-weight:700;font-size:13px;margin-right:8px;">2</span>域名一栏填：<b style="color:#5b3a8e;">你的名字:端口</b>，例：test.com:20001</div>
       <div><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:999px;background:linear-gradient(135deg,#ff9ecb,#b39dff);color:#fff;font-weight:700;font-size:13px;margin-right:8px;">3</span>点「确定」，等约 30 秒，刷新本页就能看到新站地址</div>
     </div>
   </div>
 
-  <div style="background:#fff;border-radius:22px;padding:16px 18px;box-shadow:0 4px 14px rgba(179,157,255,0.18);">
-    <div style="font-size:17px;font-weight:800;color:#5b3a8e;margin-bottom:12px;">可用端口（30 个，按顺序用）</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+  <div style="background:#fff;border-radius:20px;padding:14px 16px;box-shadow:0 4px 14px rgba(179,157,255,0.18);">
+    <div style="font-size:16px;font-weight:800;color:#5b3a8e;margin-bottom:10px;">可用端口（50 个，按顺序用）</div>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;">
       $ptags
     </div>
-    <div style="font-size:12px;color:#9a7fc0;margin-top:14px;">本页自动记录所有站点的公网访问地址，刷新即可查看。</div>
+    <div style="font-size:12px;color:#9a7fc0;margin-top:12px;">本页自动记录所有站点的公网访问地址，刷新即可查看。</div>
   </div>
 </div>
+</body>
 </html>
 EOF
   chmod 644 $NAV 2>/dev/null
