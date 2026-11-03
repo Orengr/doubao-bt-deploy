@@ -10,8 +10,15 @@ exec > /tmp/bt_restore.log 2>&1
 echo "=== $(date) 开始恢复 ==="
 
 WORK="${DOUBAO_WORKSPACE:-$(pwd)}"
+# 持久目录自动探测：当前目录没有 bt_data 就往上一级/常见位置找（防止跑错目录恢复失败）
+if [ ! -d "$WORK/bt_data/www" ]; then
+  for cand in "$(pwd)/.." "$(pwd)/../.." "/home/user/.doubao/agent_mode/workspace"; do
+    [ -d "$cand/bt_data/www" ] && WORK="$cand" && break
+  done
+fi
 DATA="$WORK/bt_data/www"
 CF="$WORK/cloudflared"
+ENV="$WORK/bt_env"
 
 [ -d "$DATA/server/panel" ] || { echo "错误: 持久数据不存在 $DATA（先跑 one-click.sh）"; exit 1; }
 
@@ -40,24 +47,36 @@ fi
 
 # ---------- 3. 依赖库检查修复（重置会把运行时库清掉，实测踩过） ----------
 fix_apt(){ sudo apt-get update -qq >/dev/null 2>&1; sudo apt-get install -y "$@" >/dev/null 2>&1; }
+# 离线优先：先用持久盘 bt_env 里的 deb（env-archive.sh 备的），没有才走 apt/网络
+deb_off(){ # $1=deb前缀 $2=apt包名
+  local f; f=$(ls "$ENV/debs/$1"*.deb 2>/dev/null | head -1)
+  if [ -n "$f" ]; then sudo dpkg -i "$f" >/dev/null 2>&1 && echo "离线恢复 $1 ✓"; else fix_apt "$2"; fi
+}
 # 3.1 libaio（MySQL 必须，缺了直接起不来且初始化失败）
-ldconfig -p | grep -q libaio.so.1 || { echo "缺 libaio.so.1，安装中..."; fix_apt libaio1 || echo "apt 装不了，手动: sudo dpkg -i 下载的 libaio1_*.deb"; }
-# 3.2 libssl1.1（PHP 8.1 预编译版链的是 OpenSSL 1.1）
-ldconfig -p | grep -q "libssl.so.1.1" || { echo "缺 libssl.so.1.1，安装中..."; fix_apt libssl1.1 || echo "apt 装不了（Ubuntu 22.04 需从 focal 仓库下载 libssl1.1_1.1.1f-*.deb）"; }
+ldconfig -p | grep -q libaio.so.1 || { echo "缺 libaio.so.1，恢复中..."; deb_off libaio1 libaio1 || echo "离线+apt 都失败，手动: sudo dpkg -i libaio1_*.deb"; }
+# 3.2 libssl1.1（PHP 8.1 预编译版链的是 OpenSSL 1.1；22.04 无此 apt 包，离线 deb 是主力）
+ldconfig -p | grep -q "libssl.so.1.1" || { echo "缺 libssl.so.1.1，恢复中..."; deb_off libssl1.1 libssl1.1 || echo "离线+apt 都失败，需手动从 focal 仓库下载 libssl1.1_1.1.1f-*.deb"; }
 # 3.3 libncurses.so.5（mysql 命令行客户端需要；22.04 只有 6，软链兼容）
-ldconfig -p | grep -q libncurses.so.5 || { echo "缺 libncurses.so.5，用 6 软链兼容..."; sudo ln -sf /usr/lib/x86_64-linux-gnu/libncurses.so.6 /usr/lib/x86_64-linux-gnu/libncurses.so.5; sudo ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5; }
+ldconfig -p | grep -q libncurses.so.5 || { echo "缺 libncurses.so.5，恢复中..."; deb_off libncurses6 libncurses6; sudo ln -sf /usr/lib/x86_64-linux-gnu/libncurses.so.6 /usr/lib/x86_64-linux-gnu/libncurses.so.5; sudo ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5; }
 # 3.4 libzip4（php zip 扩展需要；装不上就禁用该扩展，不影响网站功能）
-ldconfig -p | grep -q libzip.so.4 || { echo "缺 libzip.so.4，安装中..."; fix_apt libzip4; }
-# 3.5 libluajit 符号（宝塔 nginx 需要 lua_getexdata，系统包没有这个符号 → 编译 OpenResty 版）
+ldconfig -p | grep -q libzip.so.4 || { echo "缺 libzip.so.4，恢复中..."; deb_off libzip4 libzip4; }
+# 3.5 libnuma1（MySQL 8 官方二进制依赖，之前没查）
+ldconfig -p | grep -q libnuma.so.1 || { echo "缺 libnuma.so.1，恢复中..."; deb_off libnuma1 libnuma1; }
+# 3.6 libluajit 符号（宝塔 nginx 需要 lua_getexdata，系统包没有这个符号 → 优先用持久盘已编译产物）
 if ! nm -D /lib/x86_64-linux-gnu/libluajit-5.1.so.2 2>/dev/null | grep -q lua_getexdata; then
-    echo "系统 libluajit 缺 lua_getexdata 符号（宝塔 nginx 起不来），编译 OpenResty 版（约 1 分钟）..."
-    bash "$WORK/scripts/fetch.sh" "https://github.com/openresty/luajit2/archive/refs/tags/v2.1-20240815.tar.gz" /tmp/luajit2.tar.gz
-    cd /tmp && tar -xf luajit2.tar.gz && cd luajit2-2.1-20240815
-    sudo make -j4 PREFIX=/usr/local >/tmp/luajit_build.log 2>&1
-    sudo make install PREFIX=/usr/local >>/tmp/luajit_build.log 2>&1
-    sudo cp /usr/local/lib/libluajit-5.1.so.2 /lib/x86_64-linux-gnu/libluajit-5.1.so.2
-    sudo ldconfig
-    echo "libluajit 已替换为 OpenResty 版"
+    if [ -f "$ENV/luajit/libluajit-5.1.so.2" ]; then
+        sudo cp "$ENV/luajit/libluajit-5.1.so.2" /lib/x86_64-linux-gnu/libluajit-5.1.so.2 && sudo ldconfig
+        echo "libluajit 离线恢复（OpenResty 版）✓"
+    else
+        echo "系统 libluajit 缺 lua_getexdata 符号，编译 OpenResty 版（约 1 分钟）..."
+        bash "$WORK/scripts/fetch.sh" "https://github.com/openresty/luajit2/archive/refs/tags/v2.1-20240815.tar.gz" /tmp/luajit2.tar.gz
+        cd /tmp && tar -xf luajit2.tar.gz && cd luajit2-2.1-20240815
+        sudo make -j4 PREFIX=/usr/local >/tmp/luajit_build.log 2>&1
+        sudo make install PREFIX=/usr/local >>/tmp/luajit_build.log 2>&1
+        sudo cp /usr/local/lib/libluajit-5.1.so.2 /lib/x86_64-linux-gnu/libluajit-5.1.so.2
+        sudo ldconfig
+        echo "libluajit 已替换为 OpenResty 版"
+    fi
 fi
 
 # ---------- 4. 重建 init 脚本（重置会把 /etc/init.d 里的服务脚本清掉） ----------
