@@ -26,7 +26,7 @@ fi
 
 # ---------- 1. 方式 A：预编译包秒装（bt_res/ 优先） ----------
 PREBUILT=""
-for cand in "$SCRIPT_DIR/bt_res/php81-prebuilt.tar.xz" "$SCRIPT_DIR/../bt_res/php81-prebuilt.tar.xz" "/tmp/php81-prebuilt.tar.xz"; do
+for cand in "$SCRIPT_DIR/bt_res/php81-prebuilt.tar.xz" "$SCRIPT_DIR/../bt_res/php81-prebuilt.tar.xz" "$WORK/bt_res/php81-prebuilt.tar.xz" "/tmp/php81-prebuilt.tar.xz"; do
   [ -f "$cand" ] && PREBUILT="$cand" && break
 done
 if [ -n "$PREBUILT" ]; then

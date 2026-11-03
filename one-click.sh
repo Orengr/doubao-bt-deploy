@@ -19,6 +19,23 @@ mkdir -p "$WORK"
 
 echo "工作区: $WORK"
 
+# ---------- 0.5 自动准备离线资源（全自动：豆包自己下载离线包 → 秒装） ----------
+# 从项目 GitHub Release 自动下载 MySQL 预编译包 + PHP 预编译包到 bt_res/。
+# 下载失败不阻塞：MySQL 会自动走在线安装，PHP 会自动走源码编译。
+ASSET_BASE="${ASSET_BASE:-https://github.com/Orengr/doubao-bt-deploy/releases/latest/download}"
+mkdir -p "$WORK/bt_res"
+for _a in \
+  "mysql-8.0.40-linux-glibc2.17-x86_64.tar.xz" \
+  "php81-prebuilt.tar.xz"; do
+  if [ ! -f "$WORK/bt_res/$_a" ]; then
+    echo "自动下载离线资源: $_a（仅首次，之后秒装）"
+    curl -fSL -C - --retry 3 --connect-timeout 30 -o "$WORK/bt_res/$_a" "$ASSET_BASE/$_a" \
+      && echo "下载完成: $_a" || { echo "下载 $_a 失败，将走在线安装/源码编译兜底"; rm -f "$WORK/bt_res/$_a"; }
+  else
+    echo "离线资源已存在: $_a"
+  fi
+done
+
 # ---------- 1. 持久化 /www（防止沙箱重置丢数据） ----------
 bash "$WORK/scripts/persist-www.sh"
 
