@@ -122,23 +122,22 @@ sudo /etc/init.d/nginx start >/dev/null 2>&1 || true
 [ -x "$DATA/server/mysql/bin/mysqld" ] && sudo /etc/init.d/mysqld start >/dev/null 2>&1 || true
 sleep 3
 
-# ---------- 7. Playit 固定域名隧道（有 secret 就自动重连，网址不变） ----------
-if [ -f "$WORK/playit/secret.txt" ]; then
-    bash "$WORK/scripts/playit.sh" >/tmp/playit_start.log 2>&1 || true
-fi
 
-# ---------- 8. 公网隧道（cloudflared 备用；固定域名请优先用 Playit，见第 7 步） ----------
+
+# ---------- 7. 公网隧道（cloudflared，走 fetch.sh 多通道加速，避免直连 GitHub 卡死） ----------
 if [ ! -x "$CF" ] && ! command -v cloudflared >/dev/null 2>&1; then
     bash "$WORK/scripts/fetch.sh" \
         "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64" \
         "$CF" && chmod +x "$CF"
 fi
-pkill -f cloudflared 2>/dev/null || true
+for _p in $(pgrep -f cloudflared 2>/dev/null); do
+  [ "$_p" != "$$" ] && kill "$_p" 2>/dev/null
+done
 PORT=$PORT bash "$WORK/scripts/tunnel.sh" panel https 2>/dev/null || true
 sleep 6
 PORT=8088  bash "$WORK/scripts/tunnel.sh" web http  2>/dev/null || true
 
-# ---------- 9. 恢复站点监控与导航页 ----------
+# ---------- 8. 恢复站点监控与导航页 ----------
 sudo nohup bash "$WORK/scripts/sites-monitor.sh" > /tmp/sites_monitor.log 2>&1 &
 
 echo ""

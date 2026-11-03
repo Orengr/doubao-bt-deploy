@@ -12,6 +12,7 @@
 # ============================================================
 exec > /tmp/php_install.log 2>&1
 set -e
+set -o pipefail   # configure/make 失败必须中断，不能被 | tail 吞掉
 echo "=== $(date) PHP 8.1 安装开始 ==="
 
 VER="8.1.31"
@@ -35,6 +36,15 @@ if [ -n "$PREBUILT" ]; then
     # 运行依赖（php-fpm 需要这些共享库；少了会启动失败）
     sudo apt-get install -y libxml2 libcurl4 libonig5 libzip4 libpng16-16 libssl3 libbz2-1.0 libreadline8 2>/dev/null || \
     sudo apt-get install -y libxml2 libcurl4 libonig5 libzip4 libpng16-16 libssl1.1 libbz2-1.0 libreadline8 2>/dev/null || true
+    # PHP 8.1 预编译版链的是 libssl.so.1.1；Ubuntu 22.04 默认只有 OpenSSL3 且 apt 无 libssl1.1 包，
+    # 必须从 focal 仓库下载 deb 手动装，否则 php-fpm 起不来（首次部署就会踩）
+    if ! ldconfig -p 2>/dev/null | grep -q 'libssl.so.1.1'; then
+        echo "缺 libssl.so.1.1，从 Ubuntu focal 仓库下载安装..."
+        bash "$SCRIPT_DIR/fetch.sh" \
+            "http://cn.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb" \
+            /tmp/libssl1.1.deb && sudo dpkg -i /tmp/libssl1.1.deb >/dev/null 2>&1 || \
+            echo "!! libssl1.1 安装失败，php-fpm 可能启动不了；手动下载 libssl1.1_1.1.1f-*.deb 安装后重跑"
+    fi
     # 关键：不要在 / 下直接 tar -xf！/www 是软链到持久目录，跨设备解压含硬链接的包会报
     # "Cannot hardlink ... cross-device link" (EXDEV)。先解到 /tmp 同区，再 cp -a 过去
     # （cp -a 跨设备自动把硬链接降级为普通文件复制，不报错）

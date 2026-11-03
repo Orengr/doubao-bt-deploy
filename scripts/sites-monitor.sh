@@ -123,7 +123,8 @@ while true; do
     [ "$port" = "80" ] && continue
     [ "$port" = "8088" ] && continue
     active="$active $port"
-    if ! ps -eo args | grep -qE "cloudflared.*127\.0\.0\.1:$port"; then
+    # 判断隧道是否在跑：必须排除 grep 自身，否则 grep 匹配到自己永远"已运行"，新站不起隧道
+    if ! ps -eo args | grep -v 'grep' | grep -qE "cloudflared.*127\.0\.0\.1:$port"; then
       nohup $CLOUD tunnel --url http://127.0.0.1:$port --no-autoupdate > $LOGDIR/site_$port.log 2>&1 &
       url=""
       for i in $(seq 1 20); do
@@ -146,7 +147,9 @@ while true; do
       port=$(echo "$line" | grep -oE '端口[0-9]+' | grep -oE '[0-9]+')
       [ -z "$port" ] && continue
       if ! echo "$active" | grep -qE "(^| )$port( |$)"; then
-        sudo pkill -f "cloudflared.*127\.0\.0\.1:$port" 2>/dev/null
+        for _p in $(pgrep -f "cloudflared" 2>/dev/null); do
+          [ "$_p" != "$$" ] && sudo kill "$_p" 2>/dev/null
+        done
         rm -f $LOGDIR/site_$port.log
         unset MAP[$port]
         sudo sed -i "/端口$port/d" $SITES

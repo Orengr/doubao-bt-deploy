@@ -37,6 +37,12 @@ fi
 sudo apt-get install -y libaio1 libaio-dev libnuma1 2>/dev/null || true
 # libncurses5 在较新 Ubuntu（22.04+）没有包，用 libncurses6 替代
 sudo apt-get install -y libncurses6 2>/dev/null || sudo apt-get install -y libncurses5 2>/dev/null || true
+# libncurses5：22.04 只有 6 版，而 mysql 客户端链的是 5 → 软链兼容
+# （不处理的话改密那步 mysql -uroot 会报 libncurses.so.5 缺失，脚本中断）
+if ! ldconfig -p 2>/dev/null | grep -q 'libncurses.so.5'; then
+    sudo ln -sf /usr/lib/x86_64-linux-gnu/libncurses.so.6 /usr/lib/x86_64-linux-gnu/libncurses.so.5
+    sudo ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
+fi
 if ! ldconfig -p 2>/dev/null | grep -q 'libaio.so.1'; then
     echo "!! 缺少 libaio.so.1，尝试 apt-get update 后重装..."
     sudo apt-get update 2>/dev/null || true
